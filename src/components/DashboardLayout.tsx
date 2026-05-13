@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Alert from "@/components/Alert";
 import {
   BarChart3,
   PieChart,
@@ -67,9 +68,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [userEmail, setUserEmail] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [alert, setAlert] = useState<{
+    type: "success" | "error" | "warning";
+    message: string;
+  } | null>(null);
+
   // Load user from localStorage first, then verify with server
   useEffect(() => {
-    // 1. Load instantly from localStorage
     const savedUser = localStorage.getItem("user");
 
     if (savedUser) {
@@ -95,10 +101,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           setUserEmail(data.user.email);
 
           // Update localStorage
-          localStorage.setItem(
-            "user",
-            JSON.stringify(data.user)
-          );
+          localStorage.setItem("user", JSON.stringify(data.user));
         } else {
           setUserEmail("");
           localStorage.removeItem("user");
@@ -113,19 +116,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-    // Logout
+  // Logout
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", {
         method: "POST",
+        credentials: "include",
       });
 
-      router.push("/login");
+      setShowLogoutAlert(false);
+
+      setAlert({
+        type: "success",
+        message: "Logged out successfully!",
+      });
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 800);
     } catch (error) {
-      console.error("Logout failed", error);
+      setAlert({
+        type: "error",
+        message: "Logout failed!",
+      });
     }
   };
-
   return (
     <div
       className="min-h-screen flex"
@@ -186,8 +201,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </p>
           </div>
 
-          <button 
-           onClick={()=>handleLogout()}
+          <button
+             onClick={() => setShowLogoutAlert(true)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold"
             style={{
               color: "#e11d48",
@@ -200,6 +215,41 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
+
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+
+      {showLogoutAlert && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className=" p-6 rounded-xl shadow-lg w-[500px]" style={{backgroundColor:colors.primary}}>
+            <h2 className="text-lg font-semibold mb-4">
+              Do you want to logout?
+            </h2>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutAlert(false)}
+                className="px-3 py-1 bg-gray-300 rounded"
+                style={{color:colors.primary}}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 bg-red-600 text-white rounded"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= MOBILE DRAWER ================= */}
       <div className="fixed inset-0 z-50 lg:hidden pointer-events-none">
