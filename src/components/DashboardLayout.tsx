@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Alert from "@/components/Alert";
+import Alert from "@/components/Message";
 import {
   BarChart3,
   PieChart,
